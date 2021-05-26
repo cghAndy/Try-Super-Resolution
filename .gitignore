@@ -1,0 +1,4 @@
+original_img/
+denoised_img/
+test.py
+__pycache__/
