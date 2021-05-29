@@ -2,3 +2,5 @@ original_img/
 denoised_img/
 test.py
 __pycache__/
+pretrain/
+*.pb

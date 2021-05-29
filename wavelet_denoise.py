@@ -18,10 +18,6 @@ from skimage.restoration import denoise_wavelet
 from skimage.io import imread
 from matplotlib.pyplot import imsave
 
-# my modules
-
-
-
 class WD():
     # 小波去噪
     def __init__(self):
