@@ -88,8 +88,11 @@ seed = int(time.time() * 256)
 torch.manual_seed(seed)
 
 name_dict = dict()
+cnt = 0
+suc_cnt = 0
 
 for img, label in dataset_loader:
+    cnt += 1
     # transform the image into a vector
     img = torch.unsqueeze(img, 0).view(-1)
     img = CArray(img.numpy())
@@ -104,9 +107,9 @@ for img, label in dataset_loader:
     # Only required for visualization in notebooks
     # %matplotlib inline
 
-    fig = CFigure(height=4, width=4, fontsize=14)
-    plot_img(fig, img, label=pred_label)
-    fig.show()
+    #fig = CFigure(height=4, width=4, fontsize=14)
+    #plot_img(fig, img, label=pred_label)
+    #fig.show()
 
     attack_type = 'PGD'
 
@@ -270,10 +273,18 @@ for img, label in dataset_loader:
     fig.sp.title('explanations')
     fig.sp.imshow(expl2, cmap='seismic')
 
-    # show 
-    fig.show()
-
-    continue
+    # show
+    # fig.show()
+    defend_path = './defend/'
+    if new_pred_label == pred_label:
+        suc_cnt += 1
+        fig.savefig(defend_path + 'success/{}.png'.format(cnt))
+    else:
+        fig.savefig(defend_path + 'failed/{}.png'.format(cnt))
+    if cnt < 100:
+        continue
+    else:
+        break
 
     from secml.ml.classifiers.loss import CSoftmax
     from secml.ml.features.normalization import CNormalizerMinMax
