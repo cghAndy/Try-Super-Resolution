@@ -1,8 +1,10 @@
+import matplotlib
 import edsr
 import numpy as np
 import torch
 from skimage.io import imread
-from matplotlib.pyplot import imsave
+from skimage.transform import downscale_local_mean
+from matplotlib.pyplot import imsave, imshow
 import torchvision.transforms.functional as F
 from torch.autograd import Variable
 
@@ -20,12 +22,19 @@ img_path = './denoised_img/img63_wd.jpg'
 save_path = './test.png'
 args = Args(16, 64, 2)
 model = edsr.make_model(args)
-state_dict = torch.load(model_path)
+state_dict = torch.load(model_path, map_location=torch.device('cpu'))
 model.load_state_dict(state_dict)
 model.eval()
-img = F.to_tensor(imread(img_path))
-img = Variable(torch.unsqueeze(img, dim=0).float(), requires_grad=False)
-img2 = model(img)
-img2 = img2.detach().squeeze(0).clamp(0,1).numpy()
-img2 = np.transpose(img2, [1, 2, 0])
-imsave(save_path, img2)
+
+def process(i):
+    img = F.to_tensor(i)
+    img = Variable(torch.unsqueeze(img, dim=0).float(), requires_grad=False)
+    img2 = model(img)
+    img2 = img2.detach().squeeze(0).clamp(0,1).numpy()
+    img2 = np.transpose(img2, [1, 2, 0])
+    img2 = downscale_local_mean(img2, (2, 2, 1))
+    return img2
+
+i = imread(img_path)
+a = process(i)
+imsave(save_path, a)
