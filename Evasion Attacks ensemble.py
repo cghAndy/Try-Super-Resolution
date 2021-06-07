@@ -236,6 +236,7 @@ for img, label in dataset_loader:
     from wavelet_denoise import WD
     denoiser = WD()
     denoised_img = denoiser.process(adv_img2)
+    denoised_img = denoised_img.clip(0, 1)
     fig.sp.title('wavelet_denoised')
     fig.sp.imshow(denoised_img)
 
