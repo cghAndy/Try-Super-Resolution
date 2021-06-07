@@ -2,7 +2,7 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 import matplotlib.pyplot as plt
-import edsr
+import edsr, mdsr, rcan
 import numpy as np
 import torch
 import skimage
@@ -10,8 +10,6 @@ import skimage.color as sc
 import imageio
 from skimage.transform import downscale_local_mean
 from matplotlib.pyplot import imsave, imshow
-import torchvision.transforms.functional as F
-from torch.autograd import Variable
 from torch.utils.data import dataloader
 
 class Args():
@@ -22,15 +20,9 @@ class Args():
         self.rgb_range = rgb_range
         self.n_colors = n_colors
         self.res_scale = res_scale
-
-model_path = './pretrain/edsr_baseline_x2.pt'
-img_path = './denoised_img/img63_wd.jpg'
-save_path = './test.png'
-args = Args(16, 64, 2)
-model = edsr.make_model(args)
-state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-model.load_state_dict(state_dict)
-model.eval()
+        self.range = 255
+        self.n_resgroups = 1
+        self.reduction = 16
 
 def set_channel(*args, n_channels=3):
     def _set_channel(img):
@@ -74,26 +66,57 @@ def max_pooling(img, G):
                 out[y, x, c] = np.max(img[G*y:G*(y+1), G*x:G*(x+1), c])  
     return out  
 
+class SR():
+    def __init__(self, model_type):
+        if 'edsr' in model_type:
+            if model_type == 'edsr_baseline':
+                self.model_path = './pretrain/edsr_baseline_x2.pt'
+                self.args = Args(16, 64, 2)
+            elif model_type == 'edsr':
+                self.model_path = './pretrain/edsr_x2.pt'
+                self.args = Args(32, 256, 2)
+            self.model = edsr.make_model(self.args)
+        elif 'mdsr' in model_type:
+            if model_type == 'mdsr_baseline':
+                self.model_path = './pretrain/mdsr_baseline.pt'
+                self.args = Args(16, 64, 2)
+            if model_type == 'mdsr':
+                self.model_path = './pretrain/mdsr.pt'
+                self.args = Args(80, 64, 2)
+            self.model = mdsr.make_model(self.args)
+        elif 'rcan' in model_type:
+            self.model_path = './pretrain/rcan_x2.pt'
+            self.args = Args(20, 64, 2)
+            self.args.res_group = 10
+            self.model = rcan.make_model(self.args)
+            
+        state_dict = torch.load(self.model_path, map_location=torch.device('cpu'))
+        self.model.load_state_dict(state_dict, strict=False)
+        self.model.eval()
+        self.img_path = './denoised_img/img63_wd.jpg'
+        self.save_path = './test.png'
 
-def process(i):
-    if 'float' in str(i.dtype):
-        i = (i * 255).astype(np.uint8)
-    img = set_channel(i)[0]
-    img = np2Tensor(img)
-    testset = img
-    d = dataloader.DataLoader(testset, batch_size=1, shuffle=False)
-    for lr in d:
-        img2 = model(lr)
-    img2 = quantize(img2)
-    img2 = img2.byte().squeeze().permute(1, 2, 0).numpy()
-    ## img2 = skimage.img_as_float(img2)
-    img2 = max_pooling(img2, 2) / 255
-    return img2
+
+    def process(self, i):
+        if 'float' in str(i.dtype):
+            i = (i * 255).astype(np.uint8)
+        img = set_channel(i)[0]
+        img = np2Tensor(img)
+        testset = img
+        d = dataloader.DataLoader(testset, batch_size=1, shuffle=False)
+        for lr in d:
+            img2 = self.model(lr)
+        img2 = quantize(img2)
+        img2 = img2.byte().squeeze().permute(1, 2, 0).numpy()
+        ## img2 = skimage.img_as_float(img2)
+        img2 = max_pooling(img2, 2) / 255
+        return img2
 
 if __name__ == '__main__':
-    i = imageio.imread(img_path)
+    sr = SR('rcan')
+    i = imageio.imread(sr.img_path)
     # i = skimage.img_as_float(i)
-    a = process(i)
+    a = sr.process(i)
     print(a.shape)
     plt.imshow(a)
     plt.show()

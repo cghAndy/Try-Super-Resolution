@@ -1,6 +1,11 @@
 original_img/
 denoised_img/
-test.py
+test*
 __pycache__/
 pretrain/
 *.pb
+data/
+Adversarial Examples/
+defend/
+*.png
+*.rar
