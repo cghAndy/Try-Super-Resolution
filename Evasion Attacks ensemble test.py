@@ -1,8 +1,3 @@
-import warnings
-warnings.filterwarnings("ignore")
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 from torchvision import models
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -117,11 +112,19 @@ for img, label in dataset_loader:
     #plot_img(fig, img, label=pred_label)
     #fig.show()
 
+<<<<<<< HEAD
     #attack_type = 'PGD'
 
     # attack_type = 'PGD-l2'
     # attack_type = 'CW'
     attack_type = 'None'
+=======
+    attack_type = 'PGD-linf'
+
+    # attack_type = 'PGD-l2'
+    # attack_type = 'CW'
+    # attack_type = 'PGD-patch'
+>>>>>>> 307b492aa39dbb676243d95410540b007dd1a096
 
     from cleverhans.attacks import CarliniWagnerL2
 
@@ -307,7 +310,11 @@ for img, label in dataset_loader:
         #fig.savefig(defend_path + 'success/{}.png'.format(cnt))
     #else:
         #fig.savefig(defend_path + 'failed/{}.png'.format(cnt))
+<<<<<<< HEAD
     if cnt <= 500:
+=======
+    if cnt < 501:
+>>>>>>> 307b492aa39dbb676243d95410540b007dd1a096
         print('{} / {}'.format(suc_cnt, cnt))
         # continue
     else:
