@@ -104,14 +104,14 @@ for img, label in dataset_loader:
 
     fig = CFigure(height=4, width=4, fontsize=14)
     plot_img(fig, img, label=pred_label)
-    fig.show()
+    ### fig.show()
 
     attack_type = 'PGD'
 
     # attack_type = 'PGD'
     # attack_type = 'CW'
 
-    from cleverhans.attacks import CarliniWagnerL2
+    # from cleverhans.attacks import CarliniWagnerL2
 
     from secml.adv.attacks import CAttackEvasion
     from secml.explanation import CExplainerIntegratedGradients
@@ -224,7 +224,7 @@ for img, label in dataset_loader:
     fig.sp.title('explanations')
     fig.sp.imshow(expl, cmap='seismic')
 
-    fig.show()
+    ### fig.show()
 
     from secml.ml.classifiers.loss import CSoftmax
     from secml.ml.features.normalization import CNormalizerMinMax
@@ -257,12 +257,12 @@ for img, label in dataset_loader:
     fig.sp.plot(itrs, scores[:, pred_class], linestyle='--', c='black')
     fig.sp.plot(itrs, scores[:, target_idx], c='black')
 
-    fig.show()
+    ### fig.show()
 
     import matplotlib.pyplot as plt
 
     adv_img = np.transpose(adv_img.tondarray().reshape((3, 224, 224)), (1, 2, 0))
-    plt.imshow(adv_img)  # 显示图片
+    ### plt.imshow(adv_img)  # 显示图片
     plt.axis('off')  # 不显示坐标轴
     if pred_label != adv_pred_label:
         plt.savefig("./Adversarial Examples/" + pred_label + '_to_' + adv_pred_label + '.png')

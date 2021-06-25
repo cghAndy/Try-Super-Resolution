@@ -1,3 +1,8 @@
+import warnings
+warnings.filterwarnings("ignore")
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 from torchvision import models
 
 # Download and cache pretrained model from PyTorch model zoo
@@ -111,12 +116,13 @@ for img, label in dataset_loader:
     #plot_img(fig, img, label=pred_label)
     #fig.show()
 
-    attack_type = 'PGD'
+    #attack_type = 'PGD'
 
     # attack_type = 'PGD'
     # attack_type = 'CW'
+    attack_type = 'None'
 
-    # from cleverhans.attacks import CarliniWagnerL2
+    from cleverhans.attacks import CarliniWagnerL2
 
     from secml.adv.attacks import CAttackEvasion
     from secml.explanation import CExplainerIntegratedGradients
@@ -133,8 +139,7 @@ for img, label in dataset_loader:
         attack_id = 'e-cleverhans'
         attack_params = {'max_iterations': 50, 'learning_rate': 0.005,
                          'binary_search_steps': 1, 'confidence': 1e6,
-                         'abort_early': False, 'initial_const': 0.4,
-                         'n_feats': 150528, 'n_classes': 1000,
+                         'abort_early': False, 'initial_const': 0.2,
                          'y_target': target_idx,
                          'clip_min': lb, 'clip_max': ub,
                          'clvh_attack_class': CarliniWagnerL2}
@@ -247,7 +252,7 @@ for img, label in dataset_loader:
     # show SR result
     #fig.subplot(2, 4, 6)
     import srload
-    sr = srload.SR('mdsr_baseline')
+    sr = srload.SR('edsr_baseline')
     processed_img = sr.process(denoised_img)
     pc_img = np.transpose(processed_img, (2, 0, 1))
     pc_img = CArray(pc_img.reshape(1, -1))
@@ -287,7 +292,7 @@ for img, label in dataset_loader:
         #fig.savefig(defend_path + 'success/{}.png'.format(cnt))
     #else:
         #fig.savefig(defend_path + 'failed/{}.png'.format(cnt))
-    if cnt < 100:
+    if cnt <= 500:
         print('{} / {}'.format(suc_cnt, cnt))
         continue
     else:

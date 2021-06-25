@@ -112,6 +112,24 @@ class SR():
         img2 = max_pooling(img2, 2) / 255
         return img2
 
+    def half_process(self, i):
+        if 'float' in str(i.dtype):
+            i = (i * 255).astype(np.uint8)
+        img = set_channel(i)[0]
+        img = np2Tensor(img)
+        testset = img
+        d = dataloader.DataLoader(testset, batch_size=1, shuffle=False)
+        for lr in d:
+            return lr
+    
+    def last_process(self, img2, pool=True):
+        img2 = quantize(img2)
+        img2 = img2.byte().squeeze().permute(1, 2, 0).numpy()
+        ## img2 = skimage.img_as_float(img2)
+        if pool:
+            img2 = max_pooling(img2, 2) / 255
+        return img2
+
 if __name__ == '__main__':
     sr = SR('rcan')
     i = imageio.imread(sr.img_path)

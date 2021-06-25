@@ -95,7 +95,6 @@ torch.manual_seed(seed)
 name_dict = dict()
 cnt = 0
 suc_cnt = 0
-mod_cnt = 0
 
 for img, label in dataset_loader:
     cnt += 1
@@ -117,11 +116,12 @@ for img, label in dataset_loader:
     #plot_img(fig, img, label=pred_label)
     #fig.show()
 
-    attack_type = 'PGD'
+    #attack_type = 'PGD'
 
     # attack_type = 'PGD'
     # attack_type = 'CW'
-    # attack_type = 'None'
+    '''
+    attack_type = 'None'
 
     from cleverhans.attacks import CarliniWagnerL2
 
@@ -200,6 +200,7 @@ for img, label in dataset_loader:
     if adv_pred_label == pred_label:
         cnt -= 1
         continue
+    '''
 
     # compute the explanations w.r.t. the target class
     #explainer = CExplainerIntegratedGradients(clf)
@@ -241,66 +242,8 @@ for img, label in dataset_loader:
 
     # show wavelet-denoising result
     #fig.subplot(2, 4, 5)
+    adv_img = img
     adv_img2 = np.transpose(adv_img.tondarray().reshape((3, 224, 224)), (1, 2, 0))
-
-    import srload
-    sr = srload.SR('edsr_baseline')
-    transfer_sr = srload.SR('mdsr_baseline')
-
-    T = 50
-    alpha = 8/255
-    loss_fun = torch.nn.MSELoss()
-    lr_image0 = transfer_sr.half_process(adv_img2)
-    lr_image = transfer_sr.half_process(adv_img2)
-    sr_image0 = transfer_sr.model(lr_image)
-    lr_rand = torch.Tensor(np.random.uniform(-0.2 / 255, 0.2 / 255, lr_image.shape)).type_as(lr_image)
-    lr_image = lr_image + lr_rand
-    lr_image.requires_grad = True
-
-    for temT in range(T):
-        # print(lr)
-        sr_image = transfer_sr.model(lr_image).squeeze(0)
-        transfer_sr.model.zero_grad()
-        '''
-        if (cfg.type == 'part'):
-            sr = sr * outer_mask
-        '''
-        loss = torch.sqrt(loss_fun(sr_image, sr_image0) * sr_image.numel())  # L2距离
-        if temT == 0:
-            print('start loss: {:.3f}'.format(loss.data))
-        loss.backward(retain_graph=True)
-        data_grad = lr_image.grad.data
-        # print(data_grad)
-        lr_image = lr_image.detach()
-        lr_imagen = torch.clamp(lr_image + torch.sign(data_grad) * alpha / T, 0, 1)
-        # print(lrn)
-        lr_image = (torch.clamp((lr_imagen - lr_image0), -alpha, alpha)) + lr_image0
-        lr_image = torch.autograd.Variable(lr_image)
-        lr_image.requires_grad = True
-    
-    print('final loss: {:.3f}'.format(loss.data))
-    sr_image = transfer_sr.last_process(transfer_sr.model(lr_image))
-    lr_image = transfer_sr.last_process(lr_image, pool=False)
-    lr_image0 = transfer_sr.last_process(lr_image0, pool=False)
-    sr_image0 = transfer_sr.last_process(sr_image0)
-    
-    '''
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.subplot(1, 4, 1)
-    plt.title('sr_image_modified')
-    plt.imshow(sr_image)
-    plt.subplot(1, 4, 2)
-    plt.title('sr_image_original')
-    plt.imshow(sr_image0)
-    plt.subplot(1, 4, 3)
-    plt.title('lr_image_adv')
-    plt.imshow(lr_image)
-    plt.subplot(1, 4, 4)
-    plt.title('lr_image')
-    plt.imshow(lr_image0)
-    plt.show()
-    '''
 
     from wavelet_denoise import WD
     denoiser = WD()
@@ -311,10 +254,8 @@ for img, label in dataset_loader:
 
     # show SR result
     #fig.subplot(2, 4, 6)
-    
-    
-
-
+    import srload
+    sr = srload.SR('edsr_baseline')
     processed_img = sr.process(denoised_img)
     pc_img = np.transpose(processed_img, (2, 0, 1))
     pc_img = CArray(pc_img.reshape(1, -1))
@@ -345,20 +286,17 @@ for img, label in dataset_loader:
     #expl2 = np.maximum(np.maximum(r2, g2), b2)
     #fig.sp.title('explanations')
     #fig.sp.imshow(expl2, cmap='seismic')
-    new2_pred_label = labels[clf.predict(CArray(np.transpose(sr.process(denoiser.process(lr_image).clip(0, 1)), (2, 0, 1)).reshape(1, -1))).item()]
+
     # show
     # fig.show()
     #defend_path = './defend/'
     if new_pred_label == pred_label:
         suc_cnt += 1
-        if new2_pred_label != pred_label:
-            mod_cnt += 1
         #fig.savefig(defend_path + 'success/{}.png'.format(cnt))
     #else:
         #fig.savefig(defend_path + 'failed/{}.png'.format(cnt))
-
     if cnt <= 500:
-        print('modified success: {} / defend success: {} / all: {}'.format(mod_cnt, suc_cnt, cnt))
+        print('{} / {}'.format(suc_cnt, cnt))
         continue
     else:
         break
