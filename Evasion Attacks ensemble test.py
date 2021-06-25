@@ -4,7 +4,8 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from torchvision import models
-
+import os
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 # Download and cache pretrained model from PyTorch model zoo
 model = models.resnet18(pretrained=True)
 import io
@@ -118,13 +119,14 @@ for img, label in dataset_loader:
 
     #attack_type = 'PGD'
 
-    # attack_type = 'PGD'
+    # attack_type = 'PGD-l2'
     # attack_type = 'CW'
     attack_type = 'None'
 
     from cleverhans.attacks import CarliniWagnerL2
 
     from secml.adv.attacks import CAttackEvasion
+    from secml.adv.attacks.evasion.foolbox.fb_attacks.fb_pgd_attack import CFoolboxPGDLinf
     from secml.explanation import CExplainerIntegratedGradients
 
     lb = 0
@@ -143,8 +145,12 @@ for img, label in dataset_loader:
                          'y_target': target_idx,
                          'clip_min': lb, 'clip_max': ub,
                          'clvh_attack_class': CarliniWagnerL2}
+        attack = CAttackEvasion.create(
+            attack_id,
+            clf,
+            **attack_params)
 
-    if attack_type == 'PGD':
+    if attack_type == 'PGD-l2':
         attack_id = 'e-pgd'
         solver_params = {
             'eta': 1e-2,
@@ -152,11 +158,15 @@ for img, label in dataset_loader:
             'eps': 1e-6}
         attack_params = {'double_init': False,
                          'distance': 'l2',
-                         'dmax': 0.875227,
+                         'dmax': 1.2,
                          'lb': lb,
                          'ub': ub,
                          'y_target': target_idx,
                          'solver_params': solver_params}
+        attack = CAttackEvasion.create(
+            attack_id,
+            clf,
+            **attack_params)
 
     if attack_type == 'PGD-patch':
         attack_id = 'e-pgd'
@@ -173,7 +183,6 @@ for img, label in dataset_loader:
             'eta': 0.8,
             'max_iter': 50,
             'eps': 1e-6}
-
         attack_params = {'double_init': False,
                          'distance': 'l2',
                          'dmax': dmax_patch,
@@ -181,11 +190,17 @@ for img, label in dataset_loader:
                          'ub': ub_patch,
                          'y_target': target_idx,
                          'solver_params': solver_params}
+        attack = CAttackEvasion.create(
+            attack_id,
+            clf,
+            **attack_params)
 
-    attack = CAttackEvasion.create(
-        attack_id,
-        clf,
-        **attack_params)
+    if attack_type == 'PGD-linf':
+        attack = CFoolboxPGDLinf(clf, y_target=target_idx,
+                               lb=lb, ub=ub,
+                               epsilons=0.2,
+                               steps=50,
+                               random_start=False)
 
     # run the attack
     eva_y_pred, _, eva_adv_ds, _ = attack.run(img, pred_class)
@@ -294,7 +309,7 @@ for img, label in dataset_loader:
         #fig.savefig(defend_path + 'failed/{}.png'.format(cnt))
     if cnt <= 500:
         print('{} / {}'.format(suc_cnt, cnt))
-        continue
+        # continue
     else:
         break
 
